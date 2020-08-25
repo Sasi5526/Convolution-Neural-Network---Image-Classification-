@@ -1,0 +1,189 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Aug 25 16:14:51 2020
+
+@author: sasim
+"""
+
+#Import Libraries
+import tensorflow as tf
+import os
+import numpy as np
+import pandas as pd
+from keras.preprocessing.image import ImageDataGenerator,load_img
+from keras.utils import to_categorical
+from matplotlib import pyplot as plt
+%matplotlib inline
+import warnings
+
+if not os.path.isdir('models'):
+    os.mkdir('models')
+    
+print('Tensorflow version:', tf.__version__)
+print('Is using GPU?', tf.test.is_gpu_available())
+
+##Image Properties
+Image_Width=128
+Image_Height=128
+Image_Size=(Image_Width,Image_Height)
+Image_Channels=3
+
+##Importing Dataset
+#train
+Train=os.listdir("''''cat vs dog\\training_set")
+categories=[]
+for f_name in Train:
+    category=f_name.split('.')[0]
+    if category=='dog':
+        categories.append(1)
+    else:
+        categories.append(0)
+train=pd.DataFrame({
+    'train':Train,
+    'category':categories
+})
+
+#Test
+Test = os.listdir("''''cat vs dog\\test_set")
+category_test=[]
+for j_name in Test:
+    categor=j_name.split('.')[0]
+    if categor=='dog':
+        category_test.append(1)
+    else:
+        category_test.append(0)
+test=pd.DataFrame({
+    'test':Test,
+    'category_test':category_test
+})
+
+#Create a neural network Model
+
+from keras.models import Sequential
+from keras.layers import Conv2D,MaxPooling2D,\
+     Dropout,Flatten,Dense,Activation,\
+     BatchNormalization
+     
+     
+model=Sequential()
+
+model.add(Conv2D(32,(3,3),activation='relu',input_shape=(Image_Width,Image_Height,Image_Channels)))
+model.add(BatchNormalization())
+model.add(MaxPooling2D(pool_size=(2,2)))
+model.add(Dropout(0.25))
+
+
+model.add(Conv2D(64,(3,3),activation='relu'))
+model.add(BatchNormalization())
+model.add(MaxPooling2D(pool_size=(2,2)))
+model.add(Dropout(0.25))
+
+
+model.add(Conv2D(128,(3,3),activation='relu'))
+model.add(BatchNormalization())
+model.add(MaxPooling2D(pool_size=(2,2)))
+model.add(Dropout(0.25))
+
+
+model.add(Flatten())
+model.add(Dense(512,activation='relu'))
+model.add(BatchNormalization())
+model.add(Dropout(0.5))
+model.add(Dense(2,activation='softmax'))
+model.compile(loss='categorical_crossentropy',
+  optimizer='rmsprop',metrics=['accuracy'])
+
+model.summary()
+
+##Defining Callbacks and Learning rate
+
+from keras.callbacks import EarlyStopping, ReduceLROnPlateau
+earlystop = EarlyStopping(patience = 10)
+learning_rate_reduction = ReduceLROnPlateau(monitor = 'val_acc',patience = 2,verbose = 1,factor = 0.5,min_lr = 0.00001)
+callbacks = [earlystop,learning_rate_reduction]
+
+#Managing training data by splitting into training and validation
+
+from sklearn.model_selection import train_test_split
+
+train["category"] = train["category"].replace({0:'cat',1:'dog'})
+test["category_test"] = test["category_test"].replace({0:'cat',1:'dog'})
+
+train_data,validation_data = train_test_split(train,test_size=0.20,random_state=42)
+
+train_data = train_data.reset_index(drop=True)
+
+validation_data = validation_data.reset_index(drop=True)
+
+total_train=train_data.shape[0]
+total_validate=validation_data.shape[0]
+batch_size=15
+
+##Data Genarator & Normalizing the data
+
+train_data_gen = ImageDataGenerator(rotation_range=15,
+                                rescale=1./255,
+                                shear_range=0.1,
+                                zoom_range=0.2,
+                                horizontal_flip=True,
+                                width_shift_range=0.1,
+                                height_shift_range=0.1)
+
+train_generator = train_data_gen.flow_from_dataframe(train_data, "'''''cat vs dog\\training_set",
+                                                     x_col='train',y_col='category',target_size=Image_Size,
+                                                     class_mode='categorical', batch_size=batch_size)
+
+validation_data_gen = ImageDataGenerator(rescale=1./255)
+
+validation_generator = validation_data_gen.flow_from_dataframe(validation_data,  "''''cat vs dog\\training_set", 
+                                                              x_col='train', y_col='category', target_size=Image_Size,
+                                                              class_mode='categorical', batch_size=batch_size)
+test_data_gen = ImageDataGenerator(rotation_range=15,
+                                rescale=1./255,
+                                shear_range=0.1,
+                                zoom_range=0.2,
+                                horizontal_flip=True,
+                                width_shift_range=0.1,
+                                height_shift_range=0.1)
+
+test_generator = test_data_gen.flow_from_dataframe(test, "'''''cat vs dog\\test_set",x_col='test',y_col='category_test',
+                                                    target_size=Image_Size, class_mode='categorical', batch_size=batch_size)
+
+
+##Model Training
+
+epochs=10
+history = model.fit_generator(train_generator, epochs=epochs,validation_data=validation_generator, validation_steps=total_validate//batch_size,
+                              steps_per_epoch=total_train//batch_size, callbacks=callbacks)
+
+
+
+#prediction
+
+test_samples = test.shape[0]
+predict = model.predict_generator(test_generator, steps=np.ceil(test_samples/batch_size))
+
+accuracy = history.history['accuracy']
+val_accuracy = history.history['val_accuracy']
+
+plt.plot(range(len()),accuracy, label='Training')
+plt.plot(range(len()),val_accuracy, label='Validation')
+plt.legend()
+plt.show()
+
+# custom prediction
+
+from keras.preprocessing import image
+trial=image.load_img(''''''cat vs dog\\cat or dog.jpg',target_size=(64,64))
+
+trial=image.img_to_array(trial)
+trial=np.expand_dims(trial,axis=0)
+result=model.predict(trial)
+#to find it is cat or dog
+if results[0][0]==1:
+    prediction='dog'
+else:
+    prediction='cat'
+
+print(prediction)
+
