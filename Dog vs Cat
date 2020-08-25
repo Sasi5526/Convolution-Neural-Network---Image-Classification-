@@ -30,7 +30,7 @@ Image_Channels=3
 
 ##Importing Dataset
 #train
-Train=os.listdir("''''cat vs dog\\training_set")
+Train=os.listdir("D:\\sasi\\study\\ML 2\\project\\cat vs dog\\training_set")
 categories=[]
 for f_name in Train:
     category=f_name.split('.')[0]
@@ -44,7 +44,7 @@ train=pd.DataFrame({
 })
 
 #Test
-Test = os.listdir("''''cat vs dog\\test_set")
+Test = os.listdir("D:\\sasi\\study\\ML 2\\project\\cat vs dog\\test_set")
 category_test=[]
 for j_name in Test:
     categor=j_name.split('.')[0]
@@ -129,13 +129,13 @@ train_data_gen = ImageDataGenerator(rotation_range=15,
                                 width_shift_range=0.1,
                                 height_shift_range=0.1)
 
-train_generator = train_data_gen.flow_from_dataframe(train_data, "'''''cat vs dog\\training_set",
+train_generator = train_data_gen.flow_from_dataframe(train_data, "D:\\sasi\\study\\ML 2\\project\\cat vs dog\\training_set",
                                                      x_col='train',y_col='category',target_size=Image_Size,
                                                      class_mode='categorical', batch_size=batch_size)
 
 validation_data_gen = ImageDataGenerator(rescale=1./255)
 
-validation_generator = validation_data_gen.flow_from_dataframe(validation_data,  "''''cat vs dog\\training_set", 
+validation_generator = validation_data_gen.flow_from_dataframe(validation_data,  "D:\\sasi\\study\\ML 2\\project\\cat vs dog\\training_set", 
                                                               x_col='train', y_col='category', target_size=Image_Size,
                                                               class_mode='categorical', batch_size=batch_size)
 test_data_gen = ImageDataGenerator(rotation_range=15,
@@ -146,7 +146,7 @@ test_data_gen = ImageDataGenerator(rotation_range=15,
                                 width_shift_range=0.1,
                                 height_shift_range=0.1)
 
-test_generator = test_data_gen.flow_from_dataframe(test, "'''''cat vs dog\\test_set",x_col='test',y_col='category_test',
+test_generator = test_data_gen.flow_from_dataframe(test, "D:\\sasi\\study\\ML 2\\project\\cat vs dog\\test_set",x_col='test',y_col='category_test',
                                                     target_size=Image_Size, class_mode='categorical', batch_size=batch_size)
 
 
@@ -165,16 +165,24 @@ predict = model.predict_generator(test_generator, steps=np.ceil(test_samples/bat
 
 accuracy = history.history['accuracy']
 val_accuracy = history.history['val_accuracy']
+loss = history.history['loss']
+val_loss = history.history['val_loss']
 
-plt.plot(range(len()),accuracy, label='Training')
-plt.plot(range(len()),val_accuracy, label='Validation')
-plt.legend()
-plt.show()
+epoch   = range(len(accuracy)) 
+
+plt.plot(epoch, accuracy)
+plt.plot(epoch, val_accuracy)
+plt.title('Training and validation accuracy')
+plt.figure()
+
+plt.plot(epoch, loss)
+plt.plot(epoch, val_loss)
+plt.title('Training and validation loss')
 
 # custom prediction
 
 from keras.preprocessing import image
-trial=image.load_img(''''''cat vs dog\\cat or dog.jpg',target_size=(64,64))
+trial=image.load_img('D:\\sasi\\study\\ML 2\\project\\cat vs dog\\cat or dog.jpg',target_size=(64,64))
 
 trial=image.img_to_array(trial)
 trial=np.expand_dims(trial,axis=0)
@@ -186,4 +194,6 @@ else:
     prediction='cat'
 
 print(prediction)
+
+
 
